@@ -1,0 +1,1952 @@
+<!DOCTYPE html>
+<html lang="mr" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>माझी डिजिटल डायरी - Daily Task & Cashbook</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Noto Sans Devanagari & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- SheetJS (XLSX Export) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <!-- jsPDF & autoTable (PDF Export) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans Devanagari"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              navy: '#0f172a',
+              gold: '#f59e0b',
+              teal: '#0d9488',
+              card: '#1e293b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar for mobile smoothness */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #334155;
+    }
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea, select {
+      user-select: text;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+  <!-- Top App Bar -->
+  <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between shadow-sm">
+    <div class="flex items-center space-x-2.5">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-teal-500 flex items-center justify-center text-white shadow-md shadow-teal-500/20">
+        <i class="fa-solid fa-book-bookmark text-lg"></i>
+      </div>
+      <div>
+        <h1 class="text-base font-bold tracking-tight text-slate-900 dark:text-white leading-tight">माझी डिजिटल डायरी</h1>
+        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium" id="headerDateDisplay">आजचा दिनांक...</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center space-x-2">
+      <!-- Save Indicator / Manual Button -->
+      <button onclick="manualSaveData()" title="डेटा सेव्ह करा" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200 dark:border-teal-800 flex items-center gap-1 active:scale-95 transition">
+        <i class="fa-solid fa-floppy-disk text-sm"></i>
+        <span class="hidden sm:inline">सेव्ह करा</span>
+      </button>
+
+      <!-- Theme Switcher -->
+      <button onclick="toggleDarkMode()" class="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 border border-slate-200 dark:border-slate-700 active:scale-90 transition">
+        <i class="fa-solid fa-moon dark:hidden"></i>
+        <i class="fa-solid fa-sun hidden dark:inline"></i>
+      </button>
+
+      <!-- Share Button -->
+      <button onclick="shareTodaySummary()" class="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 active:scale-90 transition" title="शेअर करा">
+        <i class="fa-solid fa-share-nodes"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Notification Banner (Temporary message alert) -->
+  <div id="toastNotification" class="fixed top-16 right-4 left-4 z-50 transform -translate-y-24 opacity-0 transition-all duration-300 pointer-events-none flex justify-center">
+    <div id="toastMessage" class="px-4 py-2.5 rounded-xl text-sm font-medium shadow-xl flex items-center space-x-2 bg-slate-900 text-white dark:bg-white dark:text-slate-900">
+      <i class="fa-solid fa-circle-check text-emerald-400 dark:text-emerald-600"></i>
+      <span>माहिती सेव्ह झाली!</span>
+    </div>
+  </div>
+
+  <!-- Main Content Container with bottom padding for mobile navbar -->
+  <main class="flex-1 w-full max-w-lg mx-auto p-3 sm:p-4 pb-24 overflow-x-hidden">
+
+    <!-- 1. DASHBOARD TAB -->
+    <section id="tab-dashboard" class="tab-view space-y-4">
+      
+      <!-- Quick Balance Cards (जमा, खर्च, शिल्लक) -->
+      <div class="grid grid-cols-3 gap-2.5">
+        <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-3 rounded-2xl text-white shadow-md shadow-emerald-500/10">
+          <div class="flex items-center justify-between opacity-80 mb-1">
+            <span class="text-[11px] font-semibold">एकूण जमा</span>
+            <i class="fa-solid fa-arrow-down-left text-xs"></i>
+          </div>
+          <div class="text-base font-bold tracking-tight truncate" id="dashTotalIncome">₹0</div>
+        </div>
+
+        <div class="bg-gradient-to-br from-rose-500 to-red-600 p-3 rounded-2xl text-white shadow-md shadow-rose-500/10">
+          <div class="flex items-center justify-between opacity-80 mb-1">
+            <span class="text-[11px] font-semibold">एकूण खर्च</span>
+            <i class="fa-solid fa-arrow-up-right text-xs"></i>
+          </div>
+          <div class="text-base font-bold tracking-tight truncate" id="dashTotalExpense">₹0</div>
+        </div>
+
+        <div class="bg-gradient-to-br from-indigo-600 to-blue-700 p-3 rounded-2xl text-white shadow-md shadow-indigo-600/10">
+          <div class="flex items-center justify-between opacity-80 mb-1">
+            <span class="text-[11px] font-semibold">शिल्लक बाकी</span>
+            <i class="fa-solid fa-wallet text-xs"></i>
+          </div>
+          <div class="text-base font-bold tracking-tight truncate" id="dashTotalBalance">₹0</div>
+        </div>
+      </div>
+
+      <!-- Action Quick Bar (New Task, New Cash Entry, New Note) -->
+      <div class="flex items-center justify-between gap-2 bg-white dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <button onclick="openModal('taskModal')" class="flex-1 flex flex-col items-center justify-center py-1.5 px-1 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-semibold active:scale-95 transition">
+          <i class="fa-solid fa-list-check mb-1 text-sm"></i>
+          + टास्क
+        </button>
+        <button onclick="openModal('cashModal')" class="flex-1 flex flex-col items-center justify-center py-1.5 px-1 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 rounded-xl text-xs font-semibold active:scale-95 transition">
+          <i class="fa-solid fa-indian-rupee-sign mb-1 text-sm"></i>
+          + खर्च/जमा
+        </button>
+        <button onclick="openModal('reminderModal')" class="flex-1 flex flex-col items-center justify-center py-1.5 px-1 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400 rounded-xl text-xs font-semibold active:scale-95 transition">
+          <i class="fa-solid fa-bell mb-1 text-sm"></i>
+          + स्मरणपत्र
+        </button>
+        <button onclick="openModal('noteModal')" class="flex-1 flex flex-col items-center justify-center py-1.5 px-1 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 rounded-xl text-xs font-semibold active:scale-95 transition">
+          <i class="fa-solid fa-pen-fancy mb-1 text-sm"></i>
+          + डायरी नोंद
+        </button>
+      </div>
+
+      <!-- Today's Due & Reminders Alert Banner -->
+      <div class="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-l-4 border-amber-500 p-3.5 rounded-r-2xl bg-white dark:bg-slate-900 border-t border-b border-r border-slate-200 dark:border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center space-x-2">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+            </span>
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white">आजचे ड्यू आणि स्मरणपत्रे (Alerts)</h2>
+          </div>
+          <button onclick="openDueReminderOverviewModal()" class="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline">
+            सर्व पहा <i class="fa-solid fa-arrow-right text-[10px]"></i>
+          </button>
+        </div>
+        <div id="dashDueAlertList" class="space-y-1.5">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Recent Transactions Preview -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-receipt text-teal-500"></i> अलीकडील जमा व खर्च
+          </h2>
+          <button onclick="switchTab('cashbook')" class="text-xs text-teal-600 dark:text-teal-400 font-semibold">सर्व व्यवहार</button>
+        </div>
+        <div id="dashRecentCashList" class="divide-y divide-slate-100 dark:divide-slate-800">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Quick Tasks Preview -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-clock text-amber-500"></i> प्रलंबित टास्क (Pending Tasks)
+          </h2>
+          <button onclick="switchTab('tasks')" class="text-xs text-amber-600 dark:text-amber-400 font-semibold">सर्व टास्क</button>
+        </div>
+        <div id="dashRecentTaskList" class="space-y-2">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 2. TASKS & REMINDERS TAB -->
+    <section id="tab-tasks" class="tab-view hidden space-y-3.5">
+      
+      <!-- Sub-tabs: Tasks vs Reminders -->
+      <div class="flex p-1 bg-slate-200 dark:bg-slate-800 rounded-xl">
+        <button onclick="toggleTaskSubTab('alltasks')" id="subTabTasksBtn" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm transition">
+          सर्व टास्क (<span id="taskCountBadge">0</span>)
+        </button>
+        <button onclick="toggleTaskSubTab('reminders')" id="subTabRemindersBtn" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-500 dark:text-slate-400 transition">
+          रिमाइंडर्स (<span id="reminderCountBadge">0</span>)
+        </button>
+      </div>
+
+      <!-- Tasks Filter / Search -->
+      <div class="flex items-center gap-2">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+          <input type="text" id="taskSearchInput" oninput="renderTasks()" placeholder="टास्क शोधा..." class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500">
+        </div>
+        <select id="taskPriorityFilter" onchange="renderTasks()" class="text-xs py-1.5 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200">
+          <option value="ALL">सर्व प्राधान्य</option>
+          <option value="High">तात्काळ (High)</option>
+          <option value="Medium">मध्यम (Med)</option>
+          <option value="Low">सामान्य (Low)</option>
+        </select>
+      </div>
+
+      <!-- Task List Container -->
+      <div id="taskSectionContainer">
+        <div id="tasksList" class="space-y-2.5">
+          <!-- Dynamic Task Cards -->
+        </div>
+      </div>
+
+      <!-- Reminders List Container -->
+      <div id="reminderSectionContainer" class="hidden">
+        <div id="remindersList" class="space-y-2.5">
+          <!-- Dynamic Reminder Cards -->
+        </div>
+      </div>
+
+      <!-- Floating Add Button for Tasks/Reminders -->
+      <div class="pt-2 flex gap-2">
+        <button onclick="openModal('taskModal')" class="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 active:scale-95 transition">
+          <i class="fa-solid fa-plus"></i> नवीन टास्क जोडा
+        </button>
+        <button onclick="openModal('reminderModal')" class="flex-1 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white rounded-xl text-xs font-bold shadow-md shadow-sky-500/20 flex items-center justify-center gap-1.5 active:scale-95 transition">
+          <i class="fa-solid fa-bell"></i> नवीन रिमाइंडर जोडा
+        </button>
+      </div>
+    </section>
+
+    <!-- 3. CASHBOOK TAB (जमा व खर्च) -->
+    <section id="tab-cashbook" class="tab-view hidden space-y-3.5">
+      
+      <!-- Filter By Month & Type -->
+      <div class="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2.5">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-bold text-slate-700 dark:text-slate-300">मासिक ताळेबंद</span>
+          <input type="month" id="cashMonthFilter" onchange="renderCashbook()" class="text-xs py-1 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <div class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center">
+            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase">एकूण जमा (+)</span>
+            <p class="text-sm font-bold text-emerald-700 dark:text-emerald-300" id="filterTotalIncome">₹0</p>
+          </div>
+          <div class="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-center">
+            <span class="text-[10px] text-rose-600 dark:text-rose-400 font-bold uppercase">एकूण खर्च (-)</span>
+            <p class="text-sm font-bold text-rose-700 dark:text-rose-300" id="filterTotalExpense">₹0</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cashbook Search & Type Filter -->
+      <div class="flex items-center gap-2">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+          <input type="text" id="cashSearchInput" oninput="renderCashbook()" placeholder="नोंद / तपशील शोधा..." class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+        </div>
+        <select id="cashTypeFilter" onchange="renderCashbook()" class="text-xs py-1.5 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200">
+          <option value="ALL">सर्व नोंदी</option>
+          <option value="INCOME">फक्त जमा (+)</option>
+          <option value="EXPENSE">फक्त खर्च (-)</option>
+        </select>
+      </div>
+
+      <!-- Transactions List -->
+      <div id="cashEntriesList" class="space-y-2">
+        <!-- Dynamic Entry Cards -->
+      </div>
+
+      <button onclick="openModal('cashModal')" class="w-full py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-teal-500/20 flex items-center justify-center gap-1.5 active:scale-95 transition">
+        <i class="fa-solid fa-plus-circle"></i> नवीन जमा/खर्च नोंद जोडा
+      </button>
+    </section>
+
+    <!-- 4. REPORTS & CHARTS TAB -->
+    <section id="tab-reports" class="tab-view hidden space-y-4">
+      
+      <!-- Date Range Filter -->
+      <div class="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-2">
+        <span class="text-xs font-bold text-slate-700 dark:text-slate-300">कालावधी निवडा:</span>
+        <select id="reportRangeSelect" onchange="updateChartsAndReports()" class="text-xs py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold">
+          <option value="MONTH">चालू महिना</option>
+          <option value="ALL">संपूर्ण रेकॉर्ड</option>
+          <option value="WEEK">चालू आठवडा</option>
+        </select>
+      </div>
+
+      <!-- Chart 1: Income vs Expense Comparison -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-bold text-slate-800 dark:text-slate-200">जमा वि. खर्च ताळेबंद (Comparison)</h3>
+          <span class="text-[10px] text-slate-400">बार चार्ट</span>
+        </div>
+        <div class="relative h-56 w-full">
+          <canvas id="incomeExpenseChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Category Breakdown (Doughnut) -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-bold text-slate-800 dark:text-slate-200">खर्च वर्गवारी (Expense by Category)</h3>
+          <span class="text-[10px] text-slate-400">पाई / डोनट</span>
+        </div>
+        <div class="relative h-52 w-full flex items-center justify-center">
+          <canvas id="categoryChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 3: Task Completion Status -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-bold text-slate-800 dark:text-slate-200">टास्क प्रगती अहवाल (Task Completion)</h3>
+          <span class="text-[10px] text-slate-400">प्रगती</span>
+        </div>
+        <div class="relative h-44 w-full flex items-center justify-center">
+          <canvas id="taskStatusChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Export & Download Hub -->
+      <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-4 rounded-2xl shadow-lg space-y-3">
+        <div>
+          <h3 class="text-sm font-bold flex items-center gap-1.5 text-amber-400">
+            <i class="fa-solid fa-file-export"></i> रिपोर्ट व डेटा डाऊनलोड
+          </h3>
+          <p class="text-xs text-slate-300 mt-0.5">आपला सर्व डेटा सुरक्षित ठेवा किंवा एक्सेल/पीडीएफ स्वरूपात मिळवा.</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button onclick="exportToExcel()" class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold active:scale-95 transition shadow">
+            <i class="fa-solid fa-file-excel text-sm"></i> Excel (.xlsx)
+          </button>
+          <button onclick="exportToPDF()" class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold active:scale-95 transition shadow">
+            <i class="fa-solid fa-file-pdf text-sm"></i> PDF Report
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 5. DIARY & BACKUP / SETTINGS TAB -->
+    <section id="tab-diary" class="tab-view hidden space-y-4">
+      
+      <!-- Daily Diary Notes -->
+      <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-book text-purple-500"></i> डिजिटल डायरी दैनिक नोंदी (Journal)
+          </h2>
+          <button onclick="openModal('noteModal')" class="text-xs font-bold text-purple-600 dark:text-purple-400">
+            + नवीन टीप
+          </button>
+        </div>
+        
+        <div id="diaryNotesList" class="space-y-2">
+          <!-- Dynamic Notes list -->
+        </div>
+      </div>
+
+      <!-- Backup & Restore Center -->
+      <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+        <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+          <i class="fa-solid fa-cloud-arrow-down text-sky-500"></i> संपूर्ण बॅकअप आणि रिस्टोअर (JSON)
+        </h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          मोबाईल बदलताना किंवा डेटा सुरक्षित ठेवण्यासाठी संपूर्ण बॅकअप फाईल सेव्ह करून ठेवू शकता.
+        </p>
+
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button onclick="exportJsonBackup()" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition">
+            <i class="fa-solid fa-download"></i> JSON Backup
+          </button>
+          
+          <label class="py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer text-center">
+            <i class="fa-solid fa-upload"></i> Restore JSON
+            <input type="file" id="jsonFileInput" accept=".json" onchange="importJsonBackup(event)" class="hidden">
+          </label>
+        </div>
+      </div>
+
+      <!-- Quick Info / About -->
+      <div class="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1">
+        <p class="font-bold text-slate-700 dark:text-slate-300">माझी डिजिटल डायरी (Android PWA Ready)</p>
+        <p>100% प्रायव्हेट - सर्व डेटा तुमच्या फोनच्या ब्राऊझर मेमरीमध्ये सुरक्षित राहतो.</p>
+        <div class="pt-2 flex justify-center gap-3">
+          <button onclick="clearAllDataWithConfirmation()" class="text-red-500 hover:underline text-[11px]">
+            <i class="fa-solid fa-trash-can"></i> सर्व डेटा पुसून टाका (Clear All)
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAVIGATION BAR (Mobile Optimized) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 py-2 px-3 shadow-lg max-w-lg mx-auto">
+    <div class="flex justify-around items-center">
+      
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex flex-col items-center justify-center text-teal-600 dark:text-teal-400">
+        <i class="fa-solid fa-gauge text-lg"></i>
+        <span class="text-[10px] font-semibold mt-1">मुख्य (Home)</span>
+      </button>
+
+      <button onclick="switchTab('tasks')" id="nav-tasks" class="nav-btn flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+        <i class="fa-solid fa-list-check text-lg"></i>
+        <span class="text-[10px] font-semibold mt-1">टास्क</span>
+      </button>
+
+      <button onclick="switchTab('cashbook')" id="nav-cashbook" class="nav-btn flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+        <i class="fa-solid fa-wallet text-lg"></i>
+        <span class="text-[10px] font-semibold mt-1">जमा-खर्च</span>
+      </button>
+
+      <button onclick="switchTab('reports')" id="nav-reports" class="nav-btn flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+        <i class="fa-solid fa-chart-pie text-lg"></i>
+        <span class="text-[10px] font-semibold mt-1">रिपोर्ट्स</span>
+      </button>
+
+      <button onclick="switchTab('diary')" id="nav-diary" class="nav-btn flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+        <i class="fa-solid fa-book-open text-lg"></i>
+        <span class="text-[10px] font-semibold mt-1">डायरी/बॅकअप</span>
+      </button>
+
+    </div>
+  </nav>
+
+  <!-- ==================== MODALS & POP-UPS ==================== -->
+
+  <!-- 1. STARTUP & DUE REMINDERS POPUP MODAL (App Open Alert) -->
+  <div id="startupDueModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      
+      <!-- Modal Header -->
+      <div class="p-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+            <i class="fa-solid fa-bell text-sm"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold leading-tight">आजची प्रलंबित कामे व रिमाइंडर्स</h3>
+            <p class="text-[11px] opacity-90" id="popupDateSubtitle">Due Dates & Alerts</p>
+          </div>
+        </div>
+        <button onclick="closeModal('startupDueModal')" class="w-7 h-7 rounded-full bg-black/10 flex items-center justify-center hover:bg-black/20 text-white">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-4 overflow-y-auto space-y-3 flex-1" id="startupDueContent">
+        <!-- Injected dynamically -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+        <span class="text-[11px] text-slate-500 dark:text-slate-400">तपशील पाहण्यासाठी आयटमवर क्लिक करा</span>
+        <button onclick="closeModal('startupDueModal')" class="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow active:scale-95 transition">
+          समजले (OK)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. ITEM DETAIL MODAL (Opens when clicking any Task / Reminder / Cash item) -->
+  <div id="itemDetailModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      
+      <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between" id="detailModalHeader">
+        <div class="flex items-center space-x-2">
+          <div id="detailModalIcon" class="w-8 h-8 rounded-xl bg-teal-500/10 text-teal-600 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-info"></i>
+          </div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white" id="detailModalTitle">तपशील</h3>
+        </div>
+        <button onclick="closeModal('itemDetailModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-4 space-y-3 text-xs" id="detailModalBody">
+        <!-- Content injected dynamically -->
+      </div>
+
+      <div class="p-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2" id="detailModalActions">
+        <button onclick="closeModal('itemDetailModal')" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold">
+          बंद करा
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. ADD TASK MODAL -->
+  <div id="taskModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+          <i class="fa-solid fa-list-check text-amber-500"></i> नवीन टास्क जोडा
+        </h3>
+        <button onclick="closeModal('taskModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form id="taskForm" onsubmit="saveTask(event)" class="space-y-3">
+        <input type="hidden" id="taskEditId">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">टास्कचे नाव / विषय *</label>
+          <input type="text" id="taskTitleInput" required placeholder="उदा. वीज बिल भरणे, मीटिंग..." class="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-amber-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">अंतिम तारीख (Due Date) *</label>
+            <input type="date" id="taskDateInput" required class="w-full text-xs p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">वेळ (Time)</label>
+            <input type="time" id="taskTimeInput" class="w-full text-xs p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">वर्गवारी (Category)</label>
+            <select id="taskCategoryInput" class="w-full text-xs p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+              <option value="ऑफिस / व्यवसाय">ऑफिस / व्यवसाय</option>
+              <option value="घरगुती">घरगुती</option>
+              <option value="आर्थिक / बिले">आर्थिक / बिले</option>
+              <option value="आरोग्य / इतर">आरोग्य / इतर</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">प्राधान्य (Priority)</label>
+            <select id="taskPriorityInput" class="w-full text-xs p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+              <option value="High">तात्काळ (High)</option>
+              <option value="Medium" selected>मध्यम (Medium)</option>
+              <option value="Low">सामान्य (Low)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">सविस्तर टीप (Note)</label>
+          <textarea id="taskNoteInput" rows="2" placeholder="काही अतिरिक्त संदर्भ किंवा फोन नंबर..." class="w-full text-xs p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('taskModal')" class="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300">रद्द करा</button>
+          <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs shadow-md shadow-amber-500/20 active:scale-95 transition">सेव्ह करा</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. ADD CASH TRANSACTION MODAL -->
+  <div id="cashModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+          <i class="fa-solid fa-indian-rupee-sign text-teal-500"></i> जमा व खर्च नोंद
+        </h3>
+        <button onclick="closeModal('cashModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form id="cashForm" onsubmit="saveCashEntry(event)" class="space-y-3">
+        <input type="hidden" id="cashEditId">
+
+        <!-- Type Selector: Income or Expense -->
+        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+          <label class="flex items-center justify-center py-1.5 rounded-lg text-xs font-bold cursor-pointer transition has-[:checked]:bg-rose-500 has-[:checked]:text-white text-slate-600 dark:text-slate-300">
+            <input type="radio" name="cashTypeRadio" value="EXPENSE" checked class="hidden">
+            <i class="fa-solid fa-arrow-trend-down mr-1"></i> खर्च (Expense)
+          </label>
+          <label class="flex items-center justify-center py-1.5 rounded-lg text-xs font-bold cursor-pointer transition has-[:checked]:bg-emerald-500 has-[:checked]:text-white text-slate-600 dark:text-slate-300">
+            <input type="radio" name="cashTypeRadio" value="INCOME" class="hidden">
+            <i class="fa-solid fa-arrow-trend-up mr-1"></i> जमा (Income)
+          </label>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">रक्कम (₹) *</label>
+            <input type="number" id="cashAmountInput" step="any" required placeholder="0.00" class="w-full text-base font-bold p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">तारीख *</label>
+            <input type="date" id="cashDateInput" required class="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">कॅटेगरी / शीर्षक</label>
+            <select id="cashCategoryInput" class="w-full text-xs p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+              <option value="किराणा / अन्न">किराणा / अन्न</option>
+              <option value="पगार / कमाई">पगार / कमाई</option>
+              <option value="प्रवास / पेट्रोल">प्रवास / पेट्रोल</option>
+              <option value="बिले व रिचार्ज">बिले व रिचार्ज</option>
+              <option value="व्यवसाय / व्यापार">व्यवसाय / व्यापार</option>
+              <option value="वैद्यकीय खर्च">वैद्यकीय खर्च</option>
+              <option value="इतर खर्च">इतर खर्च</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">पेमेंट मोड (Mode)</label>
+            <select id="cashModeInput" class="w-full text-xs p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+              <option value="UPI">UPI / GPay / PhonePe</option>
+              <option value="रोख (Cash)">रोख (Cash)</option>
+              <option value="बँक ट्रान्सफर">बँक ट्रान्सफर (NEFT/IMPS)</option>
+              <option value="क्रेडिट/डेबिट कार्ड">क्रेडिट / डेबिट कार्ड</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">सविस्तर तपशील (Details / Remark)</label>
+          <input type="text" id="cashRemarkInput" placeholder="उदा. भाजीपाला, मित्र परतफेड, दुकानाचे भाडे..." class="w-full text-xs p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('cashModal')" class="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300">रद्द करा</button>
+          <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs shadow-md shadow-teal-500/20 active:scale-95 transition">नोंद सेव्ह करा</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. ADD REMINDER MODAL -->
+  <div id="reminderModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+          <i class="fa-solid fa-bell text-sky-500"></i> नवीन स्मरणपत्र (Reminder)
+        </h3>
+        <button onclick="closeModal('reminderModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form id="reminderForm" onsubmit="saveReminder(event)" class="space-y-3">
+        <input type="hidden" id="reminderEditId">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">स्मरणपत्र शीर्षक (Title) *</label>
+          <input type="text" id="reminderTitleInput" required placeholder="उदा. औषध घेणे, विमा हप्ता भरणे..." class="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">तारीख *</label>
+            <input type="date" id="reminderDateInput" required class="w-full text-xs p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">वेळ</label>
+            <input type="time" id="reminderTimeInput" class="w-full text-xs p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">महत्त्वाची टीप</label>
+          <textarea id="reminderNoteInput" rows="2" placeholder="महत्त्वाच्या सूचना..." class="w-full text-xs p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('reminderModal')" class="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300">रद्द करा</button>
+          <button type="submit" class="px-5 py-2 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl text-xs shadow-md shadow-sky-500/20 active:scale-95 transition">स्मरणपत्र सेव्ह करा</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. ADD DIARY NOTE MODAL -->
+  <div id="noteModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+          <i class="fa-solid fa-pen-nib text-purple-500"></i> दैनंदिन डायरी नोंद (Note)
+        </h3>
+        <button onclick="closeModal('noteModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form id="noteForm" onsubmit="saveDiaryNote(event)" class="space-y-3">
+        <input type="hidden" id="noteEditId">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">शीर्षक / विषय *</label>
+          <input type="text" id="noteTitleInput" required placeholder="आजचे महत्त्वाचे विचार, प्रसंग..." class="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">तारीख</label>
+          <input type="date" id="noteDateInput" required class="w-full text-xs p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">सविस्तर मजकूर *</label>
+          <textarea id="noteContentInput" rows="5" required placeholder="येथे मनमोकळे लिहून ठेवा..." class="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('noteModal')" class="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300">रद्द करा</button>
+          <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs shadow-md shadow-purple-500/20 active:scale-95 transition">डायरी नोंदवा</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // DATA STATE OBJECT
+    let appData = {
+      tasks: [],
+      cashbook: [],
+      reminders: [],
+      notes: [],
+      settings: {
+        darkMode: false
+      }
+    };
+
+    // Chart instances references
+    let incomeExpenseChartInstance = null;
+    let categoryChartInstance = null;
+    let taskStatusChartInstance = null;
+
+    // LOCAL STORAGE KEYS
+    const STORAGE_KEY = 'MAJHI_DIGITAL_DIARY_DB_V1';
+
+    // INITIALIZATION ON WINDOW LOAD
+    window.onload = function() {
+      loadStoredData();
+      initTheme();
+      displayHeaderDate();
+      setDefaultFormDates();
+      renderAllViews();
+
+      // Automatically trigger popup if there are due tasks or reminders
+      setTimeout(() => {
+        checkAndShowDuePopup(true);
+      }, 500);
+    };
+
+    // 1. DATE HELPERS (MARATHI)
+    function getTodayString() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function getCurrentMonthString() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function formatMarathiDate(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return dateStr;
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function displayHeaderDate() {
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const today = new Date();
+      try {
+        const marathiStr = today.toLocaleDateString('mr-IN', options);
+        document.getElementById('headerDateDisplay').innerText = marathiStr;
+      } catch (e) {
+        document.getElementById('headerDateDisplay').innerText = today.toDateString();
+      }
+    }
+
+    function setDefaultFormDates() {
+      const today = getTodayString();
+      const currentMonth = getCurrentMonthString();
+      
+      if (document.getElementById('taskDateInput')) document.getElementById('taskDateInput').value = today;
+      if (document.getElementById('cashDateInput')) document.getElementById('cashDateInput').value = today;
+      if (document.getElementById('reminderDateInput')) document.getElementById('reminderDateInput').value = today;
+      if (document.getElementById('noteDateInput')) document.getElementById('noteDateInput').value = today;
+      if (document.getElementById('cashMonthFilter')) document.getElementById('cashMonthFilter').value = currentMonth;
+    }
+
+    // 2. DATA PERSISTENCE & STORAGE
+    function loadStoredData() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          appData = JSON.parse(raw);
+          // Safety defaults
+          if (!appData.tasks) appData.tasks = [];
+          if (!appData.cashbook) appData.cashbook = [];
+          if (!appData.reminders) appData.reminders = [];
+          if (!appData.notes) appData.notes = [];
+          if (!appData.settings) appData.settings = { darkMode: false };
+        } catch (e) {
+          console.error("Data parse error", e);
+        }
+      } else {
+        // Load default mock data for great first-time look
+        loadDemoData();
+      }
+    }
+
+    function persistData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    }
+
+    function manualSaveData() {
+      persistData();
+      showToast('सर्व डेटा यशस्वीरित्या सेव्ह झाला!');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      const text = document.getElementById('toastMessage');
+      if (text) text.querySelector('span').innerText = msg;
+      
+      toast.classList.remove('-translate-y-24', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.add('-translate-y-24', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 2500);
+    }
+
+    function loadDemoData() {
+      const today = getTodayString();
+      appData = {
+        tasks: [
+          { id: '1', title: 'इलेक्ट्रिसिटी बिल भरणे', date: today, time: '17:00', category: 'आर्थिक / बिले', priority: 'High', completed: false, note: 'महावितरण ग्राहक क्रमांक 0293817' },
+          { id: '2', title: 'किराणा सामान आणणे', date: today, time: '19:30', category: 'घरगुती', priority: 'Medium', completed: false, note: 'गहू, तेल, साखर' },
+          { id: '3', title: 'मासिक बजेट रिव्ह्यू', date: today, time: '11:00', category: 'ऑफिस / व्यवसाय', priority: 'Low', completed: true, note: 'अहवाल तयार आहे.' }
+        ],
+        cashbook: [
+          { id: 'c1', type: 'INCOME', amount: 35000, date: today, category: 'पगार / कमाई', mode: 'बँक ट्रान्सफर', remark: 'मासिक पगार जमा' },
+          { id: 'c2', type: 'EXPENSE', amount: 2450, date: today, category: 'किराणा / अन्न', mode: 'UPI', remark: 'डी-मार्ट किराणा बिल' },
+          { id: 'c3', type: 'EXPENSE', amount: 500, date: today, category: 'प्रवास / पेट्रोल', mode: 'रोख (Cash)', remark: 'बाईक पेट्रोल' }
+        ],
+        reminders: [
+          { id: 'r1', title: 'गाडीचा विमा नूतनीकरण', date: today, time: '10:00', note: 'पॉलिसी नंबर तपासून ऑनलाइन पेमेंट करणे.' },
+          { id: 'r2', title: 'डॉक्टर अपॉइंटमेंट', date: today, time: '18:00', note: 'रूटीन चेकअप' }
+        ],
+        notes: [
+          { id: 'n1', title: 'नवीन महिन्याचे आर्थिक नियोजन', date: today, content: 'या महिन्यात अनावश्यक खर्च टाळायचा आहे आणि किमान ₹10,000 एसआयपी (SIP) मध्ये गुंतवायचे आहेत.' }
+        ],
+        settings: {
+          darkMode: false
+        }
+      };
+      persistData();
+    }
+
+    // 3. THEME TOGGLE (Dark / Light)
+    function initTheme() {
+      if (appData.settings.darkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+
+    function toggleDarkMode() {
+      appData.settings.darkMode = !appData.settings.darkMode;
+      initTheme();
+      persistData();
+      if (incomeExpenseChartInstance) {
+        updateChartsAndReports();
+      }
+    }
+
+    // 4. NAVIGATION LOGIC
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+      const activeEl = document.getElementById(`tab-${tabId}`);
+      if (activeEl) activeEl.classList.remove('hidden');
+
+      // Update Nav Bar UI
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('text-teal-600', 'dark:text-teal-400');
+        btn.classList.add('text-slate-400', 'dark:text-slate-500');
+      });
+
+      const activeNav = document.getElementById(`nav-${tabId}`);
+      if (activeNav) {
+        activeNav.classList.add('text-teal-600', 'dark:text-teal-400');
+        activeNav.classList.remove('text-slate-400', 'dark:text-slate-500');
+      }
+
+      // Refresh specific tab contents
+      if (tabId === 'reports') {
+        setTimeout(updateChartsAndReports, 50);
+      } else if (tabId === 'cashbook') {
+        renderCashbook();
+      } else if (tabId === 'tasks') {
+        renderTasks();
+        renderReminders();
+      } else if (tabId === 'dashboard') {
+        renderDashboard();
+      } else if (tabId === 'diary') {
+        renderDiaryNotes();
+      }
+    }
+
+    function toggleTaskSubTab(subTab) {
+      const taskContainer = document.getElementById('taskSectionContainer');
+      const reminderContainer = document.getElementById('reminderSectionContainer');
+      const taskBtn = document.getElementById('subTabTasksBtn');
+      const reminderBtn = document.getElementById('subTabRemindersBtn');
+
+      if (subTab === 'alltasks') {
+        taskContainer.classList.remove('hidden');
+        reminderContainer.classList.add('hidden');
+        taskBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm transition";
+        reminderBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-500 dark:text-slate-400 transition";
+      } else {
+        taskContainer.classList.add('hidden');
+        reminderContainer.classList.remove('hidden');
+        reminderBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm transition";
+        taskBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-500 dark:text-slate-400 transition";
+      }
+    }
+
+    // 5. MODAL SYSTEM
+    function openModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
+
+    // 6. POP-UP ALERT FOR DUE TASKS & REMINDERS (Rule #11)
+    function checkAndShowDuePopup(isAutoStartup = false) {
+      const today = getTodayString();
+      const dueTasks = appData.tasks.filter(t => !t.completed && (t.date <= today));
+      const dueReminders = appData.reminders.filter(r => r.date <= today);
+
+      if (dueTasks.length === 0 && dueReminders.length === 0 && isAutoStartup) {
+        // Nothing urgent on startup, don't disturb
+        return;
+      }
+
+      openDueReminderOverviewModal();
+    }
+
+    function openDueReminderOverviewModal() {
+      const today = getTodayString();
+      const dueTasks = appData.tasks.filter(t => !t.completed && (t.date <= today));
+      const dueReminders = appData.reminders.filter(r => r.date <= today);
+      const container = document.getElementById('startupDueContent');
+      document.getElementById('popupDateSubtitle').innerText = `दिनांक: ${formatMarathiDate(today)} चे प्रलंबित अलर्ट`;
+
+      if (dueTasks.length === 0 && dueReminders.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-slate-400">
+            <i class="fa-solid fa-circle-check text-4xl text-emerald-500 mb-2"></i>
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">अभिनंदन! आजचे कोणतेही काम किंवा रिमाइंडर प्रलंबित नाही.</p>
+          </div>
+        `;
+      } else {
+        let html = '';
+
+        if (dueTasks.length > 0) {
+          html += `<div class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">प्रलंबित टास्क (${dueTasks.length})</div>`;
+          dueTasks.forEach(task => {
+            const isOverdue = task.date < today;
+            html += `
+              <div onclick="showItemDetail('task', '${task.id}')" class="p-2.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border-l-4 ${isOverdue ? 'border-red-500' : 'border-amber-500'} cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-between">
+                <div>
+                  <h4 class="text-xs font-bold text-slate-800 dark:text-slate-100">${escapeHtml(task.title)}</h4>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    <i class="fa-regular fa-clock mr-1"></i>${task.time || 'वेळ नाही'} • <span class="${isOverdue ? 'text-red-500 font-bold' : ''}">${isOverdue ? 'मुदत संपली' : 'आज अंतिम तारीख'}</span>
+                  </p>
+                </div>
+                <span class="text-xs text-slate-400"><i class="fa-solid fa-chevron-right"></i></span>
+              </div>
+            `;
+          });
+        }
+
+        if (dueReminders.length > 0) {
+          html += `<div class="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider mt-3 mb-1">महत्त्वाचे रिमाइंडर्स (${dueReminders.length})</div>`;
+          dueReminders.forEach(rem => {
+            html += `
+              <div onclick="showItemDetail('reminder', '${rem.id}')" class="p-2.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border-l-4 border-sky-500 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-between">
+                <div>
+                  <h4 class="text-xs font-bold text-slate-800 dark:text-slate-100">${escapeHtml(rem.title)}</h4>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    <i class="fa-regular fa-bell mr-1"></i>${rem.time || 'सर्व वेळ'}
+                  </p>
+                </div>
+                <span class="text-xs text-slate-400"><i class="fa-solid fa-chevron-right"></i></span>
+              </div>
+            `;
+          });
+        }
+
+        container.innerHTML = html;
+      }
+
+      openModal('startupDueModal');
+    }
+
+    // 7. OPEN ITEM IN DETAIL VIEW (New Window / Dedicated Modal - Rule #11)
+    function showItemDetail(type, id) {
+      const modal = document.getElementById('itemDetailModal');
+      const titleElem = document.getElementById('detailModalTitle');
+      const iconElem = document.getElementById('detailModalIcon');
+      const bodyElem = document.getElementById('detailModalBody');
+      const actionsElem = document.getElementById('detailModalActions');
+
+      if (type === 'task') {
+        const item = appData.tasks.find(t => t.id === id);
+        if (!item) return;
+
+        titleElem.innerText = "टास्क तपशील";
+        iconElem.innerHTML = `<i class="fa-solid fa-list-check text-amber-500"></i>`;
+        bodyElem.innerHTML = `
+          <div class="space-y-2">
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold">टास्कचे नाव</span>
+              <p class="text-sm font-bold text-slate-900 dark:text-white">${escapeHtml(item.title)}</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold">अंतिम तारीख</span>
+                <p class="font-medium text-slate-700 dark:text-slate-200">${formatMarathiDate(item.date)}</p>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold">वेळ</span>
+                <p class="font-medium text-slate-700 dark:text-slate-200">${item.time || 'नोंद नाही'}</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold">प्राधान्य</span>
+                <p class="font-semibold ${item.priority === 'High' ? 'text-rose-500' : (item.priority === 'Medium' ? 'text-amber-500' : 'text-blue-500')}">${item.priority}</p>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold">स्थिती</span>
+                <p class="font-bold ${item.completed ? 'text-emerald-500' : 'text-amber-500'}">${item.completed ? 'पूर्ण (Completed)' : 'प्रलंबित (Pending)'}</p>
+              </div>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold">वर्गवारी (Category)</span>
+              <p class="text-slate-700 dark:text-slate-200">${item.category}</p>
+            </div>
+            ${item.note ? `
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold">सविस्तर टीप</span>
+              <p class="text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 p-2 rounded-lg">${escapeHtml(item.note)}</p>
+            </div>` : ''}
+          </div>
+        `;
+
+        actionsElem.innerHTML = `
+          <button onclick="toggleTaskStatus('${item.id}'); closeModal('itemDetailModal');" class="px-3 py-1.5 rounded-xl text-xs font-bold ${item.completed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-600 text-white'}">
+            ${item.completed ? 'अपूर्ण करा' : 'पूर्ण झाले (Mark Done)'}
+          </button>
+          <button onclick="deleteTask('${item.id}'); closeModal('itemDetailModal');" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+            हटवा
+          </button>
+          <button onclick="closeModal('itemDetailModal')" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold">
+            बंद करा
+          </button>
+        `;
+      } 
+      else if (type === 'reminder') {
+        const item = appData.reminders.find(r => r.id === id);
+        if (!item) return;
+
+        titleElem.innerText = "स्मरणपत्र तपशील";
+        iconElem.innerHTML = `<i class="fa-solid fa-bell text-sky-500"></i>`;
+        bodyElem.innerHTML = `
+          <div class="space-y-2">
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold">शीर्षक</span>
+              <p class="text-sm font-bold text-slate-900 dark:text-white">${escapeHtml(item.title)}</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold">तारीख</span>
+                <p class="font-medium text-slate-700 dark:text-slate-200">${formatMarathiDate(item.date)}</p>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold">वेळ</span>
+                <p class="font-medium text-slate-700 dark:text-slate-200">${item.time || 'नोंद नाही'}</p>
+              </div>
+            </div>
+            ${item.note ? `
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold">टीप</span>
+              <p class="text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 p-2 rounded-lg">${escapeHtml(item.note)}</p>
+            </div>` : ''}
+          </div>
+        `;
+
+        actionsElem.innerHTML = `
+          <button onclick="deleteReminder('${item.id}'); closeModal('itemDetailModal');" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+            हटवा
+          </button>
+          <button onclick="closeModal('itemDetailModal')" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold">
+            बंद करा
+          </button>
+        `;
+      }
+      else if (type === 'cash') {
+        const item = appData.cashbook.find(c => c.id === id);
+        if (!item) return;
+
+        const isInc = item.type === 'INCOME';
+        titleElem.innerText = isInc ? "जमा तपशील" : "खर्च तपशील";
+        iconElem.innerHTML = `<i class="fa-solid ${isInc ? 'fa-arrow-trend-up text-emerald-500' : 'fa-arrow-trend-down text-rose-500'}"></i>`;
+        bodyElem.innerHTML = `
+          <div class="space-y-2">
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold">रक्कम</span>
+              <p class="text-xl font-bold ${isInc ? 'text-emerald-600' : 'text-rose-600'}">₹${Number(item.amount).toLocaleString('en-IN')}</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold">तारीख</span>
+                <p class="font-medium text-slate-700 dark:text-slate-200">${formatMarathiDate(item.date)}</p>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold">पेमेंट मोड</span>
+                <p class="font-medium text-slate-700 dark:text-slate-200">${item.mode}</p>
+              </div>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold">कॅटेगरी</span>
+              <p class="font-semibold text-slate-800 dark:text-slate-200">${item.category}</p>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold">शेरा / तपशील</span>
+              <p class="text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 p-2 rounded-lg">${escapeHtml(item.remark || 'काही नाही')}</p>
+            </div>
+          </div>
+        `;
+
+        actionsElem.innerHTML = `
+          <button onclick="deleteCashEntry('${item.id}'); closeModal('itemDetailModal');" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+            हटवा
+          </button>
+          <button onclick="closeModal('itemDetailModal')" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold">
+            बंद करा
+          </button>
+        `;
+      }
+
+      openModal('itemDetailModal');
+    }
+
+    // 8. TASK MANAGEMENT METHODS
+    function saveTask(e) {
+      e.preventDefault();
+      const id = document.getElementById('taskEditId').value || 't_' + Date.now();
+      const title = document.getElementById('taskTitleInput').value.trim();
+      const date = document.getElementById('taskDateInput').value;
+      const time = document.getElementById('taskTimeInput').value;
+      const category = document.getElementById('taskCategoryInput').value;
+      const priority = document.getElementById('taskPriorityInput').value;
+      const note = document.getElementById('taskNoteInput').value.trim();
+
+      const existingIndex = appData.tasks.findIndex(t => t.id === id);
+      const taskObj = {
+        id,
+        title,
+        date,
+        time,
+        category,
+        priority,
+        completed: existingIndex >= 0 ? appData.tasks[existingIndex].completed : false,
+        note
+      };
+
+      if (existingIndex >= 0) {
+        appData.tasks[existingIndex] = taskObj;
+      } else {
+        appData.tasks.unshift(taskObj);
+      }
+
+      persistData();
+      closeModal('taskModal');
+      document.getElementById('taskForm').reset();
+      setDefaultFormDates();
+      renderAllViews();
+      showToast('टास्क सेव्ह झाला!');
+    }
+
+    function toggleTaskStatus(id) {
+      const task = appData.tasks.find(t => t.id === id);
+      if (task) {
+        task.completed = !task.completed;
+        persistData();
+        renderAllViews();
+        showToast(task.completed ? 'टास्क पूर्ण झाला म्हणून चिन्हांकित!' : 'टास्क प्रलंबित केला.');
+      }
+    }
+
+    function deleteTask(id) {
+      appData.tasks = appData.tasks.filter(t => t.id !== id);
+      persistData();
+      renderAllViews();
+      showToast('टास्क हटवण्यात आला.');
+    }
+
+    // 9. CASHBOOK MANAGEMENT METHODS
+    function saveCashEntry(e) {
+      e.preventDefault();
+      const id = document.getElementById('cashEditId').value || 'c_' + Date.now();
+      const type = document.querySelector('input[name="cashTypeRadio"]:checked').value;
+      const amount = parseFloat(document.getElementById('cashAmountInput').value) || 0;
+      const date = document.getElementById('cashDateInput').value;
+      const category = document.getElementById('cashCategoryInput').value;
+      const mode = document.getElementById('cashModeInput').value;
+      const remark = document.getElementById('cashRemarkInput').value.trim();
+
+      const entryObj = { id, type, amount, date, category, mode, remark };
+      const idx = appData.cashbook.findIndex(c => c.id === id);
+
+      if (idx >= 0) {
+        appData.cashbook[idx] = entryObj;
+      } else {
+        appData.cashbook.unshift(entryObj);
+      }
+
+      persistData();
+      closeModal('cashModal');
+      document.getElementById('cashForm').reset();
+      setDefaultFormDates();
+      renderAllViews();
+      showToast('जमा-खर्च नोंद सुरक्षित केली!');
+    }
+
+    function deleteCashEntry(id) {
+      appData.cashbook = appData.cashbook.filter(c => c.id !== id);
+      persistData();
+      renderAllViews();
+      showToast('नोंद हटवण्यात आली.');
+    }
+
+    // 10. REMINDER METHODS
+    function saveReminder(e) {
+      e.preventDefault();
+      const id = document.getElementById('reminderEditId').value || 'r_' + Date.now();
+      const title = document.getElementById('reminderTitleInput').value.trim();
+      const date = document.getElementById('reminderDateInput').value;
+      const time = document.getElementById('reminderTimeInput').value;
+      const note = document.getElementById('reminderNoteInput').value.trim();
+
+      const remObj = { id, title, date, time, note };
+      const idx = appData.reminders.findIndex(r => r.id === id);
+
+      if (idx >= 0) {
+        appData.reminders[idx] = remObj;
+      } else {
+        appData.reminders.unshift(remObj);
+      }
+
+      persistData();
+      closeModal('reminderModal');
+      document.getElementById('reminderForm').reset();
+      setDefaultFormDates();
+      renderAllViews();
+      showToast('स्मरणपत्र सेव्ह केले!');
+    }
+
+    function deleteReminder(id) {
+      appData.reminders = appData.reminders.filter(r => r.id !== id);
+      persistData();
+      renderAllViews();
+      showToast('रिमाइंडर हटवले.');
+    }
+
+    // 11. DIARY NOTES METHODS
+    function saveDiaryNote(e) {
+      e.preventDefault();
+      const id = document.getElementById('noteEditId').value || 'n_' + Date.now();
+      const title = document.getElementById('noteTitleInput').value.trim();
+      const date = document.getElementById('noteDateInput').value;
+      const content = document.getElementById('noteContentInput').value.trim();
+
+      const noteObj = { id, title, date, content };
+      const idx = appData.notes.findIndex(n => n.id === id);
+
+      if (idx >= 0) {
+        appData.notes[idx] = noteObj;
+      } else {
+        appData.notes.unshift(noteObj);
+      }
+
+      persistData();
+      closeModal('noteModal');
+      document.getElementById('noteForm').reset();
+      setDefaultFormDates();
+      renderDiaryNotes();
+      showToast('डायरी नोंद सेव्ह झाली!');
+    }
+
+    function deleteDiaryNote(id) {
+      appData.notes = appData.notes.filter(n => n.id !== id);
+      persistData();
+      renderDiaryNotes();
+      showToast('डायरी नोंद हटवली.');
+    }
+
+    // 12. RENDERING VIEWS
+    function renderAllViews() {
+      renderDashboard();
+      renderTasks();
+      renderReminders();
+      renderCashbook();
+      renderDiaryNotes();
+    }
+
+    function renderDashboard() {
+      // Balance Calculations
+      let totalIncome = 0;
+      let totalExpense = 0;
+
+      appData.cashbook.forEach(c => {
+        if (c.type === 'INCOME') totalIncome += Number(c.amount);
+        else totalExpense += Number(c.amount);
+      });
+
+      const balance = totalIncome - totalExpense;
+
+      document.getElementById('dashTotalIncome').innerText = `₹${totalIncome.toLocaleString('en-IN')}`;
+      document.getElementById('dashTotalExpense').innerText = `₹${totalExpense.toLocaleString('en-IN')}`;
+      document.getElementById('dashTotalBalance').innerText = `₹${balance.toLocaleString('en-IN')}`;
+
+      // Dashboard Due & Reminders Alert
+      const today = getTodayString();
+      const dueTasks = appData.tasks.filter(t => !t.completed && (t.date <= today));
+      const dueReminders = appData.reminders.filter(r => r.date <= today);
+      const alertContainer = document.getElementById('dashDueAlertList');
+
+      if (dueTasks.length === 0 && dueReminders.length === 0) {
+        alertContainer.innerHTML = `<p class="text-xs text-slate-500 dark:text-slate-400 py-1">आज कोणतीही तातडीची कामे प्रलंबित नाहीत. दिवस आनंदात जावो!</p>`;
+      } else {
+        let html = '';
+        const combined = [
+          ...dueTasks.map(t => ({ ...t, itemType: 'task' })),
+          ...dueReminders.map(r => ({ ...r, itemType: 'reminder' }))
+        ].slice(0, 3); // show top 3 on dashboard
+
+        combined.forEach(item => {
+          const isTask = item.itemType === 'task';
+          html += `
+            <div onclick="showItemDetail('${item.itemType}', '${item.id}')" class="flex items-center justify-between text-xs py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-slate-800/80 cursor-pointer hover:bg-amber-50 dark:hover:bg-slate-800 transition">
+              <div class="flex items-center space-x-2 truncate">
+                <i class="fa-solid ${isTask ? 'fa-clock text-amber-500' : 'fa-bell text-sky-500'} text-[11px]"></i>
+                <span class="font-medium text-slate-800 dark:text-slate-200 truncate">${escapeHtml(item.title)}</span>
+              </div>
+              <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 ml-2 whitespace-nowrap">${item.time || 'आज'}</span>
+            </div>
+          `;
+        });
+        alertContainer.innerHTML = html;
+      }
+
+      // Recent Cash Entries
+      const recentCash = appData.cashbook.slice(0, 4);
+      const cashListContainer = document.getElementById('dashRecentCashList');
+      if (recentCash.length === 0) {
+        cashListContainer.innerHTML = `<p class="text-xs text-slate-400 py-2 text-center">कोणताही व्यवहार नोंदवलेला नाही.</p>`;
+      } else {
+        let cHtml = '';
+        recentCash.forEach(item => {
+          const isInc = item.type === 'INCOME';
+          cHtml += `
+            <div onclick="showItemDetail('cash', '${item.id}')" class="flex items-center justify-between py-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 px-1 rounded transition">
+              <div class="flex items-center space-x-2.5 truncate">
+                <div class="w-7 h-7 rounded-lg ${isInc ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400'} flex items-center justify-center text-xs">
+                  <i class="fa-solid ${isInc ? 'fa-arrow-down' : 'fa-arrow-up'}"></i>
+                </div>
+                <div class="truncate">
+                  <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">${escapeHtml(item.remark || item.category)}</p>
+                  <p class="text-[10px] text-slate-400">${formatMarathiDate(item.date)} • ${item.mode}</p>
+                </div>
+              </div>
+              <span class="text-xs font-bold ${isInc ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} whitespace-nowrap">
+                ${isInc ? '+' : '-'}₹${Number(item.amount).toLocaleString('en-IN')}
+              </span>
+            </div>
+          `;
+        });
+        cashListContainer.innerHTML = cHtml;
+      }
+
+      // Recent Pending Tasks
+      const pendingTasks = appData.tasks.filter(t => !t.completed).slice(0, 3);
+      const taskListContainer = document.getElementById('dashRecentTaskList');
+      if (pendingTasks.length === 0) {
+        taskListContainer.innerHTML = `<p class="text-xs text-slate-400 py-2 text-center">सर्व टास्क पूर्ण झाले आहेत!</p>`;
+      } else {
+        let tHtml = '';
+        pendingTasks.forEach(task => {
+          tHtml += `
+            <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs">
+              <div onclick="showItemDetail('task', '${task.id}')" class="flex items-center space-x-2 truncate cursor-pointer flex-1">
+                <button onclick="event.stopPropagation(); toggleTaskStatus('${task.id}')" class="w-4 h-4 rounded border border-slate-400 dark:border-slate-600 flex items-center justify-center">
+                  <i class="fa-solid fa-check text-[9px] opacity-0"></i>
+                </button>
+                <div class="truncate">
+                  <p class="font-semibold text-slate-800 dark:text-slate-200 truncate">${escapeHtml(task.title)}</p>
+                  <p class="text-[10px] text-slate-400">${formatMarathiDate(task.date)} ${task.time ? '• ' + task.time : ''}</p>
+                </div>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${task.priority === 'High' ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/60' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'}">
+                ${task.priority}
+              </span>
+            </div>
+          `;
+        });
+        taskListContainer.innerHTML = tHtml;
+      }
+    }
+
+    function renderTasks() {
+      const search = (document.getElementById('taskSearchInput')?.value || '').toLowerCase();
+      const priority = document.getElementById('taskPriorityFilter')?.value || 'ALL';
+      const container = document.getElementById('tasksList');
+      
+      let filtered = appData.tasks.filter(t => {
+        const matchesSearch = t.title.toLowerCase().includes(search) || (t.note && t.note.toLowerCase().includes(search));
+        const matchesPriority = (priority === 'ALL') || (t.priority === priority);
+        return matchesSearch && matchesPriority;
+      });
+
+      document.getElementById('taskCountBadge').innerText = appData.tasks.length;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">कोणतेही टास्क सापडले नाहीत. नवीन टास्क जोडा.</div>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(task => {
+        const isDone = task.completed;
+        html += `
+          <div class="p-3 bg-white dark:bg-slate-900 rounded-2xl border ${isDone ? 'border-slate-200 dark:border-slate-800 opacity-60' : 'border-slate-200 dark:border-slate-800 shadow-sm'} flex items-start justify-between gap-2.5 transition">
+            
+            <div class="flex items-start space-x-2.5 flex-1 min-w-0" onclick="showItemDetail('task', '${task.id}')">
+              <button onclick="event.stopPropagation(); toggleTaskStatus('${task.id}')" class="mt-0.5 w-5 h-5 rounded-lg border ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600'} flex items-center justify-center flex-shrink-0 transition">
+                <i class="fa-solid fa-check text-xs ${isDone ? 'block' : 'hidden'}"></i>
+              </button>
+              
+              <div class="truncate flex-1">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white ${isDone ? 'line-through text-slate-400 dark:text-slate-500' : ''} truncate">${escapeHtml(task.title)}</h4>
+                <div class="flex flex-wrap items-center gap-1.5 mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+                  <span><i class="fa-regular fa-calendar mr-1"></i>${formatMarathiDate(task.date)}</span>
+                  ${task.time ? `<span><i class="fa-regular fa-clock mr-1"></i>${task.time}</span>` : ''}
+                  <span class="px-1.5 py-0.2 bg-slate-100 dark:bg-slate-800 rounded text-slate-600 dark:text-slate-300 font-medium">${task.category}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col items-end space-y-1.5 flex-shrink-0">
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ${task.priority === 'High' ? 'bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400' : (task.priority === 'Medium' ? 'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500')}">
+                ${task.priority}
+              </span>
+              <button onclick="deleteTask('${task.id}')" class="text-slate-400 hover:text-rose-500 text-xs p-1">
+                <i class="fa-regular fa-trash-can"></i>
+              </button>
+            </div>
+
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function renderReminders() {
+      const container = document.getElementById('remindersList');
+      document.getElementById('reminderCountBadge').innerText = appData.reminders.length;
+
+      if (appData.reminders.length === 0) {
+        container.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">कोणतेही रिमाइंडर जोडलेले नाही.</div>`;
+        return;
+      }
+
+      let html = '';
+      appData.reminders.forEach(rem => {
+        html += `
+          <div onclick="showItemDetail('reminder', '${rem.id}')" class="p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between cursor-pointer hover:border-sky-300 transition">
+            <div class="flex items-center space-x-2.5 truncate">
+              <div class="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-bell text-sm"></i>
+              </div>
+              <div class="truncate">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">${escapeHtml(rem.title)}</h4>
+                <p class="text-[10px] text-slate-400 mt-0.5"><i class="fa-regular fa-calendar mr-1"></i>${formatMarathiDate(rem.date)} ${rem.time ? '• ' + rem.time : ''}</p>
+              </div>
+            </div>
+            <button onclick="event.stopPropagation(); deleteReminder('${rem.id}')" class="text-slate-400 hover:text-rose-500 text-xs p-1.5 ml-2">
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function renderCashbook() {
+      const selectedMonth = document.getElementById('cashMonthFilter')?.value || getCurrentMonthString();
+      const typeFilter = document.getElementById('cashTypeFilter')?.value || 'ALL';
+      const search = (document.getElementById('cashSearchInput')?.value || '').toLowerCase();
+      const container = document.getElementById('cashEntriesList');
+
+      let monthlyIncome = 0;
+      let monthlyExpense = 0;
+
+      let filtered = appData.cashbook.filter(item => {
+        const itemMonth = item.date.substring(0, 7);
+        const matchMonth = itemMonth === selectedMonth;
+        const matchType = (typeFilter === 'ALL') || (item.type === typeFilter);
+        const matchSearch = item.remark?.toLowerCase().includes(search) || item.category?.toLowerCase().includes(search) || item.mode?.toLowerCase().includes(search);
+        
+        if (matchMonth) {
+          if (item.type === 'INCOME') monthlyIncome += Number(item.amount);
+          else monthlyExpense += Number(item.amount);
+        }
+
+        return matchMonth && matchType && matchSearch;
+      });
+
+      document.getElementById('filterTotalIncome').innerText = `₹${monthlyIncome.toLocaleString('en-IN')}`;
+      document.getElementById('filterTotalExpense').innerText = `₹${monthlyExpense.toLocaleString('en-IN')}`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">या महिन्यासाठी कोणतीही नोंद सापडली नाही.</div>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(item => {
+        const isInc = item.type === 'INCOME';
+        html += `
+          <div onclick="showItemDetail('cash', '${item.id}')" class="p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between cursor-pointer hover:border-teal-300 transition">
+            <div class="flex items-center space-x-2.5 truncate">
+              <div class="w-8 h-8 rounded-xl ${isInc ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600' : 'bg-rose-50 dark:bg-rose-950/60 text-rose-600'} flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                <i class="fa-solid ${isInc ? 'fa-arrow-down' : 'fa-arrow-up'}"></i>
+              </div>
+              <div class="truncate">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">${escapeHtml(item.remark || item.category)}</h4>
+                <div class="flex items-center space-x-2 text-[10px] text-slate-400 mt-0.5">
+                  <span>${formatMarathiDate(item.date)}</span>
+                  <span>•</span>
+                  <span>${item.category}</span>
+                  <span>•</span>
+                  <span class="bg-slate-100 dark:bg-slate-800 px-1 rounded">${item.mode}</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2 flex-shrink-0 ml-2">
+              <span class="text-xs font-bold ${isInc ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+                ${isInc ? '+' : '-'}₹${Number(item.amount).toLocaleString('en-IN')}
+              </span>
+              <button onclick="event.stopPropagation(); deleteCashEntry('${item.id}')" class="text-slate-400 hover:text-rose-500 text-xs p-1">
+                <i class="fa-regular fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function renderDiaryNotes() {
+      const container = document.getElementById('diaryNotesList');
+      if (appData.notes.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">कोणतीही डायरी नोंद नाही. आजचा दिवस कसा गेला ते लिहून ठेवा!</div>`;
+        return;
+      }
+
+      let html = '';
+      appData.notes.forEach(note => {
+        html += `
+          <div class="p-3 bg-purple-50/40 dark:bg-slate-800/60 rounded-2xl border border-purple-100 dark:border-purple-950/50 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-slate-900 dark:text-purple-300">${escapeHtml(note.title)}</h4>
+              <span class="text-[10px] text-slate-400">${formatMarathiDate(note.date)}</span>
+            </div>
+            <p class="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">${escapeHtml(note.content)}</p>
+            <div class="flex justify-end pt-1">
+              <button onclick="deleteDiaryNote('${note.id}')" class="text-[11px] text-red-500 hover:underline">
+                <i class="fa-regular fa-trash-can mr-1"></i>काढून टाका
+              </button>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    // 13. CHARTS GENERATION (Chart.js)
+    function updateChartsAndReports() {
+      const range = document.getElementById('reportRangeSelect')?.value || 'MONTH';
+      const currentMonth = getCurrentMonthString();
+      const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#94a3b8' : '#475569';
+
+      // Filter entries based on range
+      let relevantCash = appData.cashbook;
+      if (range === 'MONTH') {
+        relevantCash = appData.cashbook.filter(c => c.date.startsWith(currentMonth));
+      }
+
+      // Chart 1: Income vs Expense Total
+      let totalInc = 0;
+      let totalExp = 0;
+      relevantCash.forEach(c => {
+        if (c.type === 'INCOME') totalInc += Number(c.amount);
+        else totalExp += Number(c.amount);
+      });
+
+      const ctx1 = document.getElementById('incomeExpenseChart').getContext('2d');
+      if (incomeExpenseChartInstance) incomeExpenseChartInstance.destroy();
+
+      incomeExpenseChartInstance = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: ['जमा (Income)', 'खर्च (Expense)'],
+          datasets: [{
+            data: [totalInc, totalExp],
+            backgroundColor: ['#10b981', '#f43f5e'],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: { ticks: { color: textColor }, grid: { display: false } },
+            y: { ticks: { color: textColor } }
+          }
+        }
+      });
+
+      // Chart 2: Category wise Expense Breakdown
+      const expenseByCategory = {};
+      relevantCash.filter(c => c.type === 'EXPENSE').forEach(c => {
+        expenseByCategory[c.category] = (expenseByCategory[c.category] || 0) + Number(c.amount);
+      });
+
+      const catLabels = Object.keys(expenseByCategory);
+      const catData = Object.values(expenseByCategory);
+
+      const ctx2 = document.getElementById('categoryChart').getContext('2d');
+      if (categoryChartInstance) categoryChartInstance.destroy();
+
+      categoryChartInstance = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: catLabels.length ? catLabels : ['खर्च नाही'],
+          datasets: [{
+            data: catData.length ? catData : [1],
+            backgroundColor: ['#0d9488', '#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6', '#14b8a6', '#64748b']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, color: textColor, font: { size: 10 } } }
+          }
+        }
+      });
+
+      // Chart 3: Task Completion Status
+      const completedTasks = appData.tasks.filter(t => t.completed).length;
+      const pendingTasks = appData.tasks.filter(t => !t.completed).length;
+
+      const ctx3 = document.getElementById('taskStatusChart').getContext('2d');
+      if (taskStatusChartInstance) taskStatusChartInstance.destroy();
+
+      taskStatusChartInstance = new Chart(ctx3, {
+        type: 'pie',
+        data: {
+          labels: ['पूर्ण (Done)', 'प्रलंबित (Pending)'],
+          datasets: [{
+            data: [completedTasks, pendingTasks],
+            backgroundColor: ['#10b981', '#f59e0b']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, color: textColor, font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    // 14. EXPORT TO EXCEL (SheetJS)
+    function exportToExcel() {
+      try {
+        const wb = XLSX.utils.book_new();
+
+        // Sheet 1: Cashbook
+        const cashData = appData.cashbook.map(c => ({
+          "तारीख": c.date,
+          "प्रकार": c.type === 'INCOME' ? 'जमा' : 'खर्च',
+          "रक्कम (₹)": c.amount,
+          "कॅटेगरी": c.category,
+          "पेमेंट मोड": c.mode,
+          "तपशील / शेरा": c.remark
+        }));
+        const wsCash = XLSX.utils.json_to_sheet(cashData);
+        XLSX.utils.book_append_sheet(wb, wsCash, "जमा-खर्च ताळेबंद");
+
+        // Sheet 2: Tasks
+        const taskData = appData.tasks.map(t => ({
+          "टास्क नाव": t.title,
+          "अंतिम तारीख": t.date,
+          "वेळ": t.time || '',
+          "प्राधान्य": t.priority,
+          "वर्गवारी": t.category,
+          "स्थिती": t.completed ? 'पूर्ण' : 'प्रलंबित',
+          "टीप": t.note || ''
+        }));
+        const wsTasks = XLSX.utils.json_to_sheet(taskData);
+        XLSX.utils.book_append_sheet(wb, wsTasks, "टास्क यादी");
+
+        // Sheet 3: Reminders
+        const remData = appData.reminders.map(r => ({
+          "शीर्षक": r.title,
+          "तारीख": r.date,
+          "वेळ": r.time || '',
+          "टीप": r.note || ''
+        }));
+        const wsRem = XLSX.utils.json_to_sheet(remData);
+        XLSX.utils.book_append_sheet(wb, wsRem, "स्मरणपत्रे");
+
+        XLSX.writeFile(wb, `Digital_Diary_Report_${getTodayString()}.xlsx`);
+        showToast('एक्सेल फाईल डाऊनलोड झाली!');
+      } catch (err) {
+        console.error(err);
+        showToast('एक्सेल फाईल तयार करताना अडचण आली.');
+      }
+    }
+
+    // 15. EXPORT TO PDF (jsPDF + autoTable)
+    function exportToPDF() {
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        doc.setFontSize(16);
+        doc.text("Majhi Digital Diary Report", 14, 15);
+        doc.setFontSize(10);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
+
+        // Cashbook Summary Table
+        const cashRows = appData.cashbook.map(c => [
+          c.date,
+          c.type,
+          `Rs. ${c.amount}`,
+          c.category,
+          c.mode,
+          c.remark || ''
+        ]);
+
+        doc.autoTable({
+          head: [['Date', 'Type', 'Amount', 'Category', 'Mode', 'Remark']],
+          body: cashRows,
+          startY: 28,
+          theme: 'striped',
+          headStyles: { fillColor: [15, 23, 42] }
+        });
+
+        // Tasks Table
+        const nextY = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(12);
+        doc.text("Tasks Overview", 14, nextY);
+
+        const taskRows = appData.tasks.map(t => [
+          t.title,
+          t.date,
+          t.priority,
+          t.completed ? 'Completed' : 'Pending'
+        ]);
+
+        doc.autoTable({
+          head: [['Task Title', 'Due Date', 'Priority', 'Status']],
+          body: taskRows,
+          startY: nextY + 4,
+          theme: 'grid',
+          headStyles: { fillColor: [245, 158, 11] }
+        });
+
+        doc.save(`Digital_Diary_${getTodayString()}.pdf`);
+        showToast('पीडीएफ डाऊनलोड झाली!');
+      } catch (err) {
+        console.error(err);
+        showToast('पीडीएफ तयार करताना अडचण आली.');
+      }
+    }
+
+    // 16. JSON BACKUP & RESTORE
+    function exportJsonBackup() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `Digital_Diary_Backup_${getTodayString()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('JSON बॅकअप सेव्ह झाला!');
+    }
+
+    function importJsonBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported && (imported.tasks || imported.cashbook)) {
+            appData = imported;
+            persistData();
+            initTheme();
+            renderAllViews();
+            showToast('डेटा यशस्वीरीत्या रिस्टोअर झाला!');
+          } else {
+            showToast('अवैध फाईल फॉरमॅट.');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('JSON फाईल वाचता आली नाही.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function clearAllDataWithConfirmation() {
+      const confirmed = window.confirm("तुम्हाला खात्री आहे का? सर्व टास्क, जमा-खर्च आणि डायरी नोंदी कायमच्या नष्ट होतील.");
+      if (confirmed) {
+        localStorage.removeItem(STORAGE_KEY);
+        loadDemoData();
+        renderAllViews();
+        showToast('डेटा रीसेट करण्यात आला.');
+      }
+    }
+
+    // 17. WEB SHARE API INTEGRATION
+    function shareTodaySummary() {
+      const today = getTodayString();
+      const dueTasks = appData.tasks.filter(t => !t.completed && (t.date <= today));
+      let totalInc = 0, totalExp = 0;
+      appData.cashbook.filter(c => c.date === today).forEach(c => {
+        if (c.type === 'INCOME') totalInc += Number(c.amount);
+        else totalExp += Number(c.amount);
+      });
+
+      let shareText = `📅 *माझी डिजिटल डायरी (${formatMarathiDate(today)})*\n\n`;
+      shareText += `💰 *आजचा ताळेबंद:*\n• आजची जमा: ₹${totalInc}\n• आजचा खर्च: ₹${totalExp}\n• शिल्लक: ₹${totalInc - totalExp}\n\n`;
+      
+      if (dueTasks.length > 0) {
+        shareText += `📝 *आजचे प्रलंबित टास्क (${dueTasks.length}):*\n`;
+        dueTasks.forEach((t, i) => {
+          shareText += `${i + 1}. ${t.title} (${t.time || 'वेळ नाही'})\n`;
+        });
+      } else {
+        shareText += `✅ आजचे सर्व टास्क पूर्ण!\n`;
+      }
+
+      if (navigator.share) {
+        navigator.share({
+          title: 'माझी डिजिटल डायरी',
+          text: shareText
+        }).catch((err) => console.log('Share canceled or failed', err));
+      } else {
+        // Fallback: Copy to clipboard
+        const dummy = document.createElement("textarea");
+        document.body.appendChild(dummy);
+        dummy.value = shareText;
+        dummy.select();
+        document.execCommand("copy");
+        document.body.removeChild(dummy);
+        showToast('व्हाट्सॲप समरी क्लिपबोर्डवर कॉपी केली!');
+      }
+    }
+
+    // Helper to sanitize HTML strings
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
